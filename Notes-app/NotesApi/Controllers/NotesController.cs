@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using NotesApi.NewFolder;
 using Microsoft.AspNetCore.Mvc;
+using NotesApi.Services;
 
 namespace NotesApi.Controllers
 {
@@ -13,15 +14,16 @@ namespace NotesApi.Controllers
     [Route("[controller]")]
     public class NotesController : ControllerBase
     {
-        private static List<Note> _notes = new List<Note> { new Note { Id = new Guid("00000000-0000-0000-0000-000000000001"), CategoryId = "1", OwnerId = new Guid("00000000-0000-0000-0000-000000000001"), Title = "First Note", Description = "First Note Description" },
-        new Note { Id = new Guid("00000000-0000-0000-0000-000000000002"), CategoryId = "1", OwnerId = new Guid("00000000-0000-0000-0000-000000000001"), Title = "Second Note", Description = "Second Note Description" },
-        new Note { Id = new Guid("00000000-0000-0000-0000-000000000003"), CategoryId = "1", OwnerId = new Guid("00000000-0000-0000-0000-000000000001"), Title = "Third Note", Description = "Third Note Description" },
-        new Note { Id = new Guid("00000000-0000-0000-0000-000000000004"), CategoryId = "1", OwnerId = new Guid("00000000-0000-0000-0000-000000000001"), Title = "Fourth Note", Description = "Fourth Note Description" },
-        new Note { Id = new Guid("00000000-0000-0000-0000-000000000005"), CategoryId = "1", OwnerId = new Guid("00000000-0000-0000-0000-000000000001"), Title = "Fifth Note", Description = "Fifth Note Description" }
-        };
 
+        INoteCollectionService _noteCollectionService;
 
-        public NotesController() { }
+        public NotesController(INoteCollectionService noteCollectionService)
+        {
+            this._noteCollectionService = noteCollectionService;
+
+            _noteCollectionService = noteCollectionService ?? throw new ArgumentNullException(nameof(noteCollectionService));
+
+        }
 
 
 
@@ -30,40 +32,40 @@ namespace NotesApi.Controllers
         {
             if (note == null)
                 return BadRequest("Note can't be null!");
-            _notes.Add(note);
+            _noteCollectionService.Create(note);
+
             return CreatedAtRoute("getNoteById", note.Id, note);
         }
 
         [HttpGet]
         public IActionResult GetNotes()
         {
-            return Ok(_notes);
+            return Ok(_noteCollectionService.GetAll());
         }
 
         [HttpGet("ownerId")]
         public IActionResult GetNotesByOwner(Guid owner)
         {
-            List<Note> ownerNotes = new List<Note>();
+            if (owner == null)
+                return BadRequest("id can't be null!");
 
-            foreach (Note note in _notes)
-            {
-                if (note.OwnerId == owner)
-                    ownerNotes.Add(note);
-            }
+            List<Note> ownerNotes = _noteCollectionService.GetNotesByOwnerId(owner);
+            if (ownerNotes.Count == 0)
+                return NotFound("No note has been found!");
+            
             return Ok(ownerNotes);
         }
 
         [HttpGet("id", Name = "getNoteById")]
         public IActionResult getNotesByNoteId(Guid id)
         {
-            List<Note> notesById = new List<Note>();
+            if (id == null)
+                return BadRequest("id can't be null!");
+            Note note = _noteCollectionService.Get(id);
+            if (note == null)
+                return NotFound("There is no note with this id!");
 
-            foreach (Note note in _notes)
-            {
-                if (note.Id == id)
-                    notesById.Add(note);
-            }
-            return Ok(notesById);
+            return Ok();
         }
 
         [HttpPut("{id}")]
@@ -75,15 +77,14 @@ namespace NotesApi.Controllers
                 return BadRequest("Note can't be null!");
 
             }
-            int index = _notes.FindIndex(n => n.Id == id);
-            if (index == -1)
+            bool update = _noteCollectionService.Update(id, note);
+            if (!update)
             {
                 return Post(note);
                 //return NotFound("Id dosen't exist!");
             }
-            _notes[index] = note;
-            _notes[index].Id = id;
-            return Ok(_notes);
+            
+            return Ok(_noteCollectionService.GetAll());
         }
 
         [HttpPut("{noteId}/{ownerId}")]
@@ -95,15 +96,15 @@ namespace NotesApi.Controllers
                 return BadRequest("One id is null!");
             }
 
-            int index = _notes.FindIndex(n => n.Id == noteId && n.OwnerId == ownerId);
+            bool update = _noteCollectionService.UpdateIdAndOwner(noteId, ownerId, newNote);
 
-            if (index == -1)
+            if (!update)
             {
                 return Post(newNote);
             }
 
-            _notes[index] = newNote;
-            return Ok(_notes);
+            
+            return Ok(_noteCollectionService.GetAll());
         }
 
         [HttpDelete("{id}")]
@@ -113,14 +114,14 @@ namespace NotesApi.Controllers
             {
                 return BadRequest("id can't be null!");
             }
-            int index = _notes.FindIndex(n => n.Id == id);
-            if (index == -1)
+            bool delete = _noteCollectionService.Delete(id);
+            if (!delete)
             {
                 return NotFound("Note dosen't exist!");
             }
-            _notes.RemoveAt(index);
+           
 
-            return Ok(_notes);
+            return Ok(_noteCollectionService.GetAll());
         }
 
         [HttpDelete("{noteId}/{ownerId}")]
@@ -130,34 +131,34 @@ namespace NotesApi.Controllers
             {
                 return BadRequest("id can't be null!");
             }
-            int index = _notes.FindIndex(n => n.Id == noteId && n.OwnerId == ownerId);
-            if (index == -1)
+            bool delete = _noteCollectionService.DeleteIdAndOwner(noteId, ownerId);
+
+            if (!delete)
             {
                 return NotFound("Note dosen't exist!");
             }
-            _notes.RemoveAt(index);
+           
 
-            return Ok(_notes);
+            return Ok(_noteCollectionService.GetAll());
         }
 
         [HttpDelete("owner/{ownerId}")]
         public IActionResult deleteAllNotes(Guid ownerId)
         {
-            if(ownerId==null)
+            if (ownerId == null)
             {
                 return BadRequest("id can't ben null!");
 
             }
+            bool delete = _noteCollectionService.DeleteOwner(ownerId);
 
-            int index = _notes.FindIndex(n => n.OwnerId == ownerId);
-
-            if(index==-1)
+            if (!delete)
             {
                 return NotFound("Note doesn't exist!");
             }
 
-            _notes.RemoveAt(index);
-            return Ok(_notes);
+            
+            return Ok(_noteCollectionService.GetAll());
         }
     }
 }

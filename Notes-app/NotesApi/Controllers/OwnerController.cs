@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using NotesApi.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,27 +12,31 @@ namespace NotesApi.Controllers
     [ApiController]
     public class OwnerController : ControllerBase
     {
-        static List<Owner> owners = new List<Owner>
+        IOwnerServcice _ownerCollectionService;
+
+        public OwnerController(IOwnerServcice ownerCollectionService)
         {
-           new Owner{ Id = new Guid("00000000-0000-0000-0000-000000000001"), Name= "first" },
-           new Owner{ Id = new Guid("00000000-0000-0000-0000-000000000002"), Name= "second" },
-           new Owner{ Id = new Guid("00000000-0000-0000-0000-000000000003"), Name= "third" }
-        };
+            this._ownerCollectionService = ownerCollectionService;
+            _ownerCollectionService = ownerCollectionService ?? throw new ArgumentNullException(nameof(ownerCollectionService));
+        }
         [HttpGet]
         public IActionResult GetOwner(Guid id)
         {
-            foreach (Owner owner in owners)
-            {
-                if (owner.Id == id)
-                    return Ok(owner);
-            }
-            return BadRequest("id does not exist!");
+            if (id == null)
+                return BadRequest("id is null!");
+            Owner requestedOwner = _ownerCollectionService.Get(id);
+            if (requestedOwner == null)
+                return BadRequest("id does not exist!");
+            return Ok(_ownerCollectionService.GetAll());
         }
 
         [HttpPost]
         public IActionResult PostOwner([FromBody] Owner newOwner)
         {
-            owners.Add(newOwner);
+            if (newOwner == null)
+                return BadRequest("Id is null!");
+
+            _ownerCollectionService.Create(newOwner);
             return Ok(newOwner);
         }
 
@@ -43,38 +48,38 @@ namespace NotesApi.Controllers
                 return BadRequest("Id is null!");
             }
 
-            int index = owners.FindIndex(n => n.Id == ownerId);
-            if (index == -1)
+            bool delete = _ownerCollectionService.Delete(ownerId);
+            if (!delete)
             {
                 return NotFound("id dosen't exist!");
             }
 
-            owners.RemoveAt(index);
-            return Ok(owners);
+
+            return Ok(_ownerCollectionService.GetAll());
         }
 
 
         [HttpPut("{ownerId}")]
         public IActionResult updateOwner(Guid ownerId, Owner newOwner)
         {
-            if(ownerId==null)
+            if (ownerId == null)
             {
                 return BadRequest("owner id can't be null!");
             }
-            if(newOwner==null)
+            if (newOwner == null)
             {
                 return BadRequest("new Owner can't be null");
 
             }
 
-            int index = owners.FindIndex(n => n.Id == ownerId);
-            if(index==-1)
+            bool update = _ownerCollectionService.Update(ownerId, newOwner);
+            if (!update)
             {
                 return BadRequest("Owner does not exist!");
             }
 
-            owners[index] = newOwner;
-            return Ok(owners);
+
+            return Ok(_ownerCollectionService.GetAll());
         }
     }
 }
