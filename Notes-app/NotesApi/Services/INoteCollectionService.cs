@@ -8,12 +8,12 @@ namespace NotesApi.Services
 {
     public interface INoteCollectionService : ICollectService<Note>
     {
-        List<Note> GetNotesByOwnerId(Guid ownerId);
+        Task<List<Note>> GetNotesByOwnerId(Guid ownerId);
 
-        bool UpdateIdAndOwner(Guid id, Guid ownerId, Note model);
+        Task<bool> UpdateIdAndOwner(Guid id, Guid ownerId, Note model);
 
-        bool DeleteIdAndOwner(Guid id, Guid ownerId);
+        Task<bool> DeleteIdAndOwner(Guid id, Guid ownerId);
 
-        bool DeleteOwner(Guid ownerId);
+        Task<bool> DeleteOwner(Guid ownerId);
     }
 }

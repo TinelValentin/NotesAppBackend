@@ -1,4 +1,7 @@
-﻿using System;
+﻿using MongoDB.Bson;
+using MongoDB.Driver;
+using NotesApi.Settings;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,56 +10,61 @@ namespace NotesApi.Services
 {
     public class OwnerServices : IOwnerServcice
     {
+        private IMongoCollection<Owner> _owners;
 
-        static List<Owner> _owners = new List<Owner>
+        public OwnerServices(IMongoDbSettings settings)
         {
-           new Owner{ Id = new Guid("00000000-0000-0000-0000-000000000001"), Name= "first" },
-           new Owner{ Id = new Guid("00000000-0000-0000-0000-000000000002"), Name= "second" },
-           new Owner{ Id = new Guid("00000000-0000-0000-0000-000000000003"), Name= "third" }
-        };
+            var client = new MongoClient(settings.ConnectionString);
+            var database = client.GetDatabase(settings.DatabaseName);
 
-        public bool Create(Owner model)
+            _owners = database.GetCollection<Owner>(settings.OwnerCollectionName);
+        }
+
+        public async Task<bool> Create(Owner model)
         {
-            _owners.Add(model);
+            if (model.Id == Guid.Empty)
+                model.Id = Guid.NewGuid();
+           await _owners.InsertOneAsync(model);
             return true;
         }
 
-        public bool Delete(Guid id)
+        public async Task<bool> Delete(Guid id)
         {
-            int index = _owners.FindIndex(n => n.Id == id);
-            if (index != -1)
+            var result = await _owners.DeleteOneAsync(n => n.Id == id);
+            if(!result.IsAcknowledged&&result.DeletedCount==0)
             {
-                _owners.RemoveAt(index);
-                return true;
+                return false;
             }
-            return false;
+            return true;
         }
 
-        public Owner Get(Guid id)
+       
+
+        public async Task<Owner> Get(Guid id)
         {
-            int index = _owners.FindIndex(n => n.Id == id);
-            if (index != -1)
+            var result = await _owners.FindAsync(n => n.Id == id);
+            return result.FirstOrDefault();
+        }
+
+       
+
+        public async Task<List<Owner>> GetAll()
+        {
+            var result = await _owners.FindAsync(n =>true);
+            return result.ToList();
+        }
+
+        public async Task<bool> Update(Guid id, Owner model)
+        {
+            var result = await _owners.ReplaceOneAsync(n => n.Id == id, model);
+            if(!result.IsAcknowledged&&result.ModifiedCount==0)
             {
-                return _owners[index];
-
+                await _owners.InsertOneAsync(model);
+                return false;
             }
-            return null;
+            return true;
         }
 
-        public List<Owner> GetAll()
-        {
-            return _owners;
-        }
-
-        public bool Update(Guid id, Owner model)
-        {
-            int index = _owners.FindIndex(n => n.Id == id);
-            if (index != -1)
-            {
-                _owners[index] = model;
-                return true;
-            }
-            return false;
-        }
+        
     }
 }

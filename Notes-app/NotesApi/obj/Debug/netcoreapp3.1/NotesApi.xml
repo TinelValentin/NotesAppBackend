@@ -30,6 +30,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:NotesApi.Controllers.NotesController.GetNotes">
+            <summary>
+            get all notes
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:NotesApi.Controllers.WeatherForecastController.Get">
             <remarks>Weather remark!</remarks>
              <response code="200">Weather succesful!</response>

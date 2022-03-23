@@ -1,4 +1,7 @@
-﻿using NotesApi.NewFolder;
+﻿using MongoDB.Bson;
+using MongoDB.Driver;
+using NotesApi.NewFolder;
+using NotesApi.Settings;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,102 +11,108 @@ namespace NotesApi.Services
 {
     public class NoteCollectionServices : INoteCollectionService
     {
-        private static List<Note> _notes = new List<Note> { new Note { Id = new Guid("00000000-0000-0000-0000-000000000001"), CategoryId = "1", OwnerId = new Guid("00000000-0000-0000-0000-000000000001"), Title = "First Note", Description = "First Note Description" },
-        new Note { Id = new Guid("00000000-0000-0000-0000-000000000002"), CategoryId = "1", OwnerId = new Guid("00000000-0000-0000-0000-000000000001"), Title = "Second Note", Description = "Second Note Description" },
-        new Note { Id = new Guid("00000000-0000-0000-0000-000000000003"), CategoryId = "1", OwnerId = new Guid("00000000-0000-0000-0000-000000000001"), Title = "Third Note", Description = "Third Note Description" },
-        new Note { Id = new Guid("00000000-0000-0000-0000-000000000004"), CategoryId = "1", OwnerId = new Guid("00000000-0000-0000-0000-000000000001"), Title = "Fourth Note", Description = "Fourth Note Description" },
-        new Note { Id = new Guid("00000000-0000-0000-0000-000000000005"), CategoryId = "1", OwnerId = new Guid("00000000-0000-0000-0000-000000000001"), Title = "Fifth Note", Description = "Fifth Note Description" }
-        };
+        private IMongoCollection<Note> _notes;
 
-        bool ICollectService<Note>.Create(Note model)
+
+
+        public NoteCollectionServices(IMongoDbSettings settings)
         {
-            _notes.Add(model);
+            var client = new MongoClient(settings.ConnectionString);
+            var database = client.GetDatabase(settings.DatabaseName);
+
+            _notes = database.GetCollection<Note>(settings.NoteCollectionName);
+        }
+
+
+        public async Task<Note> Get(Guid id)
+        {
+            var result = await _notes.FindAsync(note => note.Id == id);
+
+            return result.FirstOrDefault();
+
+        }
+        public async Task<List<Note>> GetAll()
+        {
+            var result = await _notes.FindAsync(note => true);
+            return result.ToList();
+        }
+
+        public async Task<bool> Create(Note note)
+        {
+            await _notes.InsertOneAsync(note);
+            return true;
+        }
+        public async Task<bool> Update(Guid id, Note note)
+        {
+            note.Id = id;
+            var result = await _notes.ReplaceOneAsync(note => note.Id == id, note);
+            if (!result.IsAcknowledged && result.ModifiedCount == 0)
+            {
+                await _notes.InsertOneAsync(note);
+                return false;
+            }
             return true;
         }
 
-        bool ICollectService<Note>.Delete(Guid id)
+
+
+
+            public async Task<bool> Delete(Guid id)
         {
-            int index = _notes.FindIndex(n => n.Id == id);
-            if (index !=-1)
+            var result = await _notes.DeleteOneAsync(note => note.Id == id);
+            if (!result.IsAcknowledged && result.DeletedCount == 0)
             {
-                _notes.RemoveAt(index);
-                return true;
+                return false;
             }
-            return false;
+            return true;
         }
 
-        bool INoteCollectionService.DeleteOwner(Guid ownerId)
+
+
+
+        public async Task<List<Note>> GetNotesByOwnerId(Guid ownerId)
         {
-            int index = _notes.FindIndex(n => n.OwnerId == ownerId);
-            if (index != -1)
+            var result = await _notes.FindAsync(note => note.OwnerId == ownerId);
+            if (result.ToList().Count > 0)
+                return result.ToList();
+            else
+                return null;
+        }
+
+        public async Task<bool> UpdateIdAndOwner(Guid id, Guid ownerId, Note model)
+        {
+
+            var update = await _notes.ReplaceOneAsync(n => n.OwnerId == ownerId && n.Id == id, model);
+            if (!update.IsAcknowledged && update.ModifiedCount == 0)
             {
-                _notes.RemoveAt(index);
-                return true;
+                await _notes.InsertOneAsync(model);
+                return false;
             }
-            return false;
+            return true;
         }
 
-        bool INoteCollectionService.DeleteIdAndOwner(Guid id, Guid ownerId)
+        public async Task<bool> DeleteIdAndOwner(Guid id, Guid ownerId)
         {
-            int index = _notes.FindIndex(n => n.Id == id&&n.OwnerId==ownerId);
-            if (index != -1)
+            var delete = await _notes.DeleteOneAsync(n => n.Id == id && n.OwnerId == ownerId);
+            if (delete.IsAcknowledged && delete.DeletedCount == 0)
             {
-                _notes.RemoveAt(index);
-                return true;
+                return false;
             }
-            return false;
+            return true;
         }
 
-
-
-        Note ICollectService<Note>.Get(Guid id)
+        public async Task<bool> DeleteOwner(Guid ownerId)
         {
-            int index = _notes.FindIndex(n => n.Id == id);
-            if (index != -1)
+            var delete = await _notes.DeleteManyAsync(n => n.OwnerId == ownerId);
+            if (delete.IsAcknowledged && delete.DeletedCount == 0)
             {
-                return _notes[index];
-                
+                return false;
             }
-            return null;
+            return true;
         }
 
-        List<Note> ICollectService<Note>.GetAll()
-        {
-            return _notes;
-        }
 
-        List<Note> INoteCollectionService.GetNotesByOwnerId(Guid ownerId)
-        {
-            List<Note> ownerList = new List<Note>();
 
-            foreach(Note note in _notes)
-            {
-                if (note.OwnerId == ownerId)
-                    ownerList.Add(note);
-            }
-            return ownerList;
-        }
 
-        bool ICollectService<Note>.Update(Guid id, Note model)
-        {
-            int index = _notes.FindIndex(n => n.Id == id);
-            if (index != -1)
-            {
-                _notes[index] = model;
-                return true; 
-            }
-            return false;
-        }
-
-        bool INoteCollectionService.UpdateIdAndOwner(Guid id,Guid ownerId, Note model)
-        {
-            int index = _notes.FindIndex(n => n.Id == id&&n.OwnerId==ownerId);
-            if (index != -1)
-            {
-                _notes[index] = model;
-                return true;
-            }
-            return false;
-        }
     }
 }
