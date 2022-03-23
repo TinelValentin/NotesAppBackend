@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>NotesApi</name>
+    </assembly>
+    <members>
+        <member name="M:NotesApi.Controllers.CategoryController.GetOne(System.String)">
+            <summary>
+            get on category wuth the id given 
+            </summary>
+            <param name="id"> the id of the category</param>
+            <returns>Category</returns>
+        </member>
+        <member name="M:NotesApi.Controllers.CategoryController.Get">
+            <summary>
+            get the list of categories
+            </summary>
+            <returns>a list of categories</returns>
+        </member>
+        <member name="M:NotesApi.Controllers.CategoryController.Delete(System.String)">
+            <summary>
+            delete the category with the given id
+            </summary>
+            <param name="id">category id</param>
+            <returns></returns>
+        </member>
+        <member name="M:NotesApi.Controllers.CategoryController.Post(NotesApi.Category)">
+            <summary>
+            adds a category to the list
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:NotesApi.Controllers.NotesController.GetNotes">
+            <summary>
+            get all notes
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:NotesApi.Controllers.WeatherForecastController.Get">
+            <remarks>Weather remark!</remarks>
+             <response code="200">Weather succesful!</response>
+             <response code="400">Weather get is missing!</response>
+             <response code="500">Server has no Weather! :(</response>
+             <returns>
+             an array of forecasts
+             </returns>
+              /// <summary>
+             Get all weather Forecast
+             </summary>
+        </member>
+    </members>
+</doc>
