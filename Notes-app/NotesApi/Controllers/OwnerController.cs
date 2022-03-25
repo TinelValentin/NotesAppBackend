@@ -20,6 +20,11 @@ namespace NotesApi.Controllers
             this._ownerCollectionService = ownerCollectionService;
             _ownerCollectionService = ownerCollectionService ?? throw new ArgumentNullException(nameof(ownerCollectionService));
         }
+        /// <summary>
+        /// get an owner with a certain id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> GetOwner(Guid id)
         {
@@ -32,6 +37,11 @@ namespace NotesApi.Controllers
             return Ok(await _ownerCollectionService.GetAll());
         }
 
+        /// <summary>
+        /// create and owner
+        /// </summary>
+        /// <param name="newOwner"></param>
+        /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> PostOwner([FromBody] Owner newOwner)
         {
@@ -41,7 +51,11 @@ namespace NotesApi.Controllers
             await _ownerCollectionService.Create(newOwner);
             return Ok(newOwner);
         }
-
+        /// <summary>
+        /// delete an owner with a certain id
+        /// </summary>
+        /// <param name="ownerId"></param>
+        /// <returns></returns>
         [HttpDelete("{ownerId}")]
         public async Task<IActionResult> DeleteOwner(Guid ownerId)
         {
@@ -60,7 +74,12 @@ namespace NotesApi.Controllers
             return Ok(await _ownerCollectionService.GetAll());
         }
 
-
+        /// <summary>
+        /// edit and owner with a certain id
+        /// </summary>
+        /// <param name="ownerId"></param>
+        /// <param name="newOwner"></param>
+        /// <returns></returns>
         [HttpPut("{ownerId}")]
         public async Task<IActionResult> updateOwner(Guid ownerId, Owner newOwner)
         {

@@ -14,7 +14,7 @@ namespace NotesApi.NewFolder
         public string Description { get; set; }
         public string CategoryId { get; set; }
         [BsonId]
-        public Guid Id { get; set; }
-        public Guid OwnerId { get; set; }
+        public Guid? Id { get; set; }
+        public Guid? OwnerId { get; set; }
     }
 }

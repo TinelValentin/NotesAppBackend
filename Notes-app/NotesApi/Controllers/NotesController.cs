@@ -27,12 +27,20 @@ namespace NotesApi.Controllers
         }
 
 
-
+        /// <summary>
+        /// Create a note
+        /// </summary>
+        /// <param name="note"></param>
+        /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Note note)
         {
             if (note == null)
                 return BadRequest("Note can't be null!");
+            if (note.Id == Guid.Empty||note.Id==null)
+                note.Id = Guid.NewGuid();
+            if (note.OwnerId == Guid.Empty||note.OwnerId==null)
+                note.OwnerId = Guid.NewGuid();
             await _noteCollectionService.Create(note);
 
 
@@ -48,6 +56,11 @@ namespace NotesApi.Controllers
             return Ok(await _noteCollectionService.GetAll());
         }
 
+        /// <summary>
+        /// get all notes belonging to an owner
+        /// </summary>
+        /// <param name="owner"></param>
+        /// <returns></returns>
         [HttpGet("ownerId")]
         public async Task<IActionResult> GetNotesByOwner(Guid owner)
         {
@@ -61,6 +74,11 @@ namespace NotesApi.Controllers
             return Ok(ownerNotes);
         }
 
+        /// <summary>
+        /// get a note with a certain id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("id", Name = "getNoteById")]
         public async Task<IActionResult> getNotesByNoteId(Guid id)
         {
@@ -73,6 +91,12 @@ namespace NotesApi.Controllers
             return Ok(await _noteCollectionService.Get(id));
         }
 
+        /// <summary>
+        /// edit a note with a certain id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="note"></param>
+        /// <returns></returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateNote(Guid id, [FromBody] Note note)
         {
@@ -93,6 +117,13 @@ namespace NotesApi.Controllers
             return Ok(await _noteCollectionService.GetAll());
         }
 
+        /// <summary>
+        /// edit a note with a certain id and owner id
+        /// </summary>
+        /// <param name="noteId"></param>
+        /// <param name="ownerId"></param>
+        /// <param name="newNote"></param>
+        /// <returns></returns>
         [HttpPut("{noteId}/{ownerId}")]
         public async Task<IActionResult> updateByNoteAndOwner(Guid noteId, Guid ownerId, Note newNote)
 
@@ -113,6 +144,11 @@ namespace NotesApi.Controllers
             return Ok(await _noteCollectionService.GetAll());
         }
 
+        /// <summary>
+        /// delete a note with a certain id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteNote(Guid id)
         {
@@ -131,7 +167,12 @@ namespace NotesApi.Controllers
         }
 
 
-
+        /// <summary>
+        /// delete a note with a certain id and ownerId
+        /// </summary>
+        /// <param name="noteId"></param>
+        /// <param name="ownerId"></param>
+        /// <returns></returns>
         [HttpDelete("{noteId}/{ownerId}")]
         public async Task<IActionResult> DeleteNote(Guid noteId, Guid ownerId)
         {
@@ -150,6 +191,11 @@ namespace NotesApi.Controllers
             return Ok(await _noteCollectionService.GetAll());
         }
 
+        /// <summary>
+        /// Delete all notes belonging to an owner
+        /// </summary>
+        /// <param name="ownerId"></param>
+        /// <returns></returns>
         [HttpDelete("owner/{ownerId}")]
         public async Task<IActionResult> deleteAllNotes(Guid ownerId)
         {
